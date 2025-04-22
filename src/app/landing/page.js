@@ -16,7 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     // Initialize socket connection to the signaling server
-    socketRef.current = io('http://localhost:5000'); // replace with your server URL
+    socketRef.current = io('https://server-webrtc-5ztd.onrender.com'); // replace with your server URL
 
     socketRef.current.on('offer', (offer) => {
       handleOffer(offer);
