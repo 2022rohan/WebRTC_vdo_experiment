@@ -5,6 +5,8 @@
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
+
+console.log("client working")
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [strangerVideo, setStrangerVideo] = useState(null);
@@ -16,17 +18,33 @@ export default function Home() {
 
   useEffect(() => {
     // Initialize socket connection to the signaling server
-    socketRef.current = io('https://server-webrtc-5ztd.onrender.com'); // replace with your server URL
+    socketRef.current = io('https://server-webrtc-5ztd.onrender.com', {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5
+    });
+    
+    socketRef.current.on('connect', () => {
+      console.log('Connected to signaling server');
+      setIsConnected(true);
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
 
     socketRef.current.on('offer', (offer) => {
+      console.log('Received offer:', offer);
       handleOffer(offer);
     });
 
     socketRef.current.on('answer', (answer) => {
+      console.log('Received answer:', answer);
       handleAnswer(answer);
     });
 
     socketRef.current.on('ice-candidate', (candidate) => {
+      console.log('Received ICE candidate:', candidate);
       handleNewICECandidate(candidate);
     });
 
@@ -34,6 +52,7 @@ export default function Home() {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: false })
       .then((stream) => {
+        console.log('Got local stream');
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
@@ -51,23 +70,40 @@ export default function Home() {
   }, []);
 
   const setupPeerConnection = (stream) => {
-    peerConnectionRef.current = new RTCPeerConnection();
+    console.log('Setting up peer connection');
+    peerConnectionRef.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
 
     // Add the local stream to the peer connection
     stream.getTracks().forEach((track) => {
+      console.log('Adding local track:', track.kind);
       peerConnectionRef.current.addTrack(track, stream);
     });
 
     peerConnectionRef.current.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('New ICE candidate:', event.candidate);
         socketRef.current.emit('ice-candidate', event.candidate);
       }
     };
 
     peerConnectionRef.current.ontrack = (event) => {
+      console.log('Received remote track:', event.track.kind);
       if (strangerVideoRef.current) {
         strangerVideoRef.current.srcObject = event.streams[0];
       }
+    };
+
+    peerConnectionRef.current.onconnectionstatechange = () => {
+      console.log('Connection state:', peerConnectionRef.current.connectionState);
+    };
+
+    peerConnectionRef.current.oniceconnectionstatechange = () => {
+      console.log('ICE connection state:', peerConnectionRef.current.iceConnectionState);
     };
 
     createOffer();
