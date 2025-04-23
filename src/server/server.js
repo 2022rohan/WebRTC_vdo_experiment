@@ -12,16 +12,17 @@ app.use(cors());
 
 const io = require('socket.io')(server, {
     cors: {
-      origin: "https://web-rtc-vdo-experiment.vercel.app", // Your deployed frontend
+      origin: "http://localhost:3000", // Your deployed frontend
       methods: ["GET", "POST"],
       credentials: true
     }
   });
 let connectedUsers = [];
-console.log("hlo outside socket.io, its working")
+// console.log("hlo outside socket.io, its working")
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
   connectedUsers.push(socket);
+  console.log(`connected users : ${connectedUsers}`)
 
   // When a user sends an offer
   socket.on('offer', (offer, callback) => {
@@ -32,13 +33,9 @@ io.on('connection', (socket) => {
       if (randomUser) {
         console.log('Sending offer to:', randomUser.id);
         randomUser.emit('offer', offer);
-        callback('Offer sent to stranger');
-      } else {
-        callback('No stranger available');
-      }
-    } else {
-      callback('Waiting for another user to connect');
-    }
+        // callback('Offer sent to stranger');
+      } 
+    } 
   });
 
   // When a user sends an answer
@@ -48,10 +45,8 @@ io.on('connection', (socket) => {
     if (randomUser) {
       console.log('Sending answer to:', randomUser.id);
       randomUser.emit('answer', answer);
-      callback('Answer sent to stranger');
-    } else {
-      callback('No stranger available');
-    }
+      // callback('Answer sent to stranger');
+    } 
   });
 
   // When a user sends ICE candidates

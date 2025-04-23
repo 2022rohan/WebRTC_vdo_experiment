@@ -18,7 +18,16 @@ export default function Home() {
 
   useEffect(() => {
     // Initialize socket connection to the signaling server
-    socketRef.current = io('https://server-webrtc-5ztd.onrender.com'); // replace with your server URL
+    socketRef.current = io('https://server-webrtc-5ztd.onrender.com'); 
+    // replace with your server URL
+
+
+    socketRef.current.on('connect', () => {
+      console.log('👉 Client connected, socket.id =', socketRef.current.id);
+    });
+    socketRef.current.on('connect_error', err => {
+      console.error('❌ Connection error', err);
+    });
     
     console.log("client working finely")
     socketRef.current.on('offer', (offer) => {
@@ -55,7 +64,11 @@ export default function Home() {
   }, []);
 
   const setupPeerConnection = (stream) => {
-    peerConnectionRef.current = new RTCPeerConnection();
+    peerConnectionRef.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    });
 
     // Add the local stream to the peer connection
     stream.getTracks().forEach((track) => {
@@ -120,6 +133,8 @@ export default function Home() {
         console.error('Error adding new ICE candidate:', error);
       });
   };
+
+  console.log("hey--here");
 
   return (
     <div>
